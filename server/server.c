@@ -1,9 +1,4 @@
-#include  <string.h>     /* strlen(), strcmp() etc */
-#include  <errno.h>      /* extern int errno, EINTR, perror() */
-#include  <sys/types.h>  /* pid_t, u_long, u_short */
-#include  <sys/socket.h> /* struct sockaddr, socket(), etc */
-#include  <netinet/in.h> /* struct sockaddr_in, htons(), htonl(), */
-/* and INADDR_ANY */
+#include "server.h"
 
 #define   SERV_TCP_PORT   40004           /* server port no */
 #define   BUFSIZE         (1024*256)

@@ -2,6 +2,7 @@
 #include  <sys/socket.h>
 #include  <netinet/in.h>
 #include  <string.h>
+#include "stream.h"
 
 // Create socket
 // Create connection
@@ -9,7 +10,6 @@
 // Functionality
 
 // Close
-#define BUFSIZE (1024 * 256)
 #define SERV_TCP_PORT 40004
 
 

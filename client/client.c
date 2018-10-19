@@ -1,17 +1,11 @@
-#include  <sys/types.h>
-#include  <sys/socket.h>
-#include  <netinet/in.h>
-#include  <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
 #include "stream.h"
 
-// Create socket
-// Create connection
-
-// Functionality
-
-// Close
 #define SERV_TCP_PORT 40004
-
 
 int createTCPSocket()
 {
@@ -24,6 +18,7 @@ int createConnection(int sd, struct sockaddr* RSA, int RSAlen)
 	// If 0 exit
 }
 
+// These will go in gets and puts below
 int send(int tosend)
 {
 	if (sizeof(tosend) == 2)
@@ -34,14 +29,12 @@ int send(int tosend)
 	{
 		return htonl(tosend);
 	}
-
 	// followed by write() command
 }
 
 int receiver(int fromread)
 {
 	// read command first (toread)
-
 	if (sizeof(int) == 2)
 	{
 		return ntoh(fromread);
@@ -51,7 +44,6 @@ int receiver(int fromread)
 		return ntohl(fromread);
 	}
 }
-
 
 // Client -> server communication requires protocol specification
 // Put is done in lab 11
@@ -72,12 +64,38 @@ void helpMenu()
 	printf("*******************************************************************************************************");
 }
 
+void cmd_pwd()
+{}
+
+void cmd_lpwd()
+{}
+
+void cmd_dir()
+{}
+
+void cmd_ldir()
+{}
+
+void cmd_cd()
+{}
+
+void cmd_lcd()
+{}
+
+void cmd_get()
+{}
+
+void cmd_put()
+{}
+
 int main(int argc, char* argv[])
 {
 	int socket, n, nr, nw, i = 0;
-	char buf1[BUFSIZE], buf2[BUFSIZE], host[BUFSIZE];
+	char buf[BUFSIZE], host[BUFSIZE];
 	struct sockaddr_in ser_addr;
 	struct hostent *hp;
+
+	pid_t pid;
 
 	// Get server host name
 	if (argc == 1) // Assume server running on the local host
@@ -127,28 +145,68 @@ int main(int argc, char* argv[])
 			--nr;
 		}
 
-		if (strcmp(buf, "quit" == 0))
+		// From here onwards will be a if-else loop strcmp(buf, "<command>" == 0)
+		// fork();
+		// execl("/bin/sh", "sh", "-c", command, (char*) 0);
+
+		pid = fork();
+
+		if (strcmp(buf, "quit") == 0)
 		{
 			printf("Bye from client\n");
 			exit(0);
 		}
-
-		if (nr > 0)
+		else if (strcmp(buf, "help") == 0)
 		{
-			if ((nw = written(sd, buf, nr)) < nr)
-			{
-				printf("Client: send error\n");
-				exit(1);
-			}
+			helpMenu();
+		}
+		else if (strcmp(buf, "pwd") == 0)
+		{
 
-			if ((nr = readn(sd, buf, sizeof(buf))) <= 0)
+		}
+		else if (strcmp(buf, "lpwd") == 0)
+		{
+			if (pid == 0)
 			{
-				printf("Client: receive error\n");
-				exit(1);
+				execl("/bin/sh", "sh", "-c", "pwd", (char*)0);
 			}
+		}
+		else if (strcmp(buf, "dir") == 0)
+		{
 
-			but[nr] = '\0';
-			printf("Server output[%d]: %s\n", i, buf);
+		}
+		else if (strcmp(buf, "ldir") == 0)
+		{
+			if (pid == 0)
+			{
+				execl("/bin/sh", "sh", "-c", "dir", (char*)0);
+			}
+		}
+		else if (strcmp(buf, "cd") == 0)
+		{
+			// get file path
+		}
+		else if (strcmp(buf, "lcd") == 0)
+		{
+			printf("Path: ");
+			char tmp[BUFSIZE];
+			scanf("%s", tmp);
+
+			buf = "cd ";
+			strcat(buf, tmp);
+
+			if (pid == 0)
+			{
+				execl("/bin/sh", "sh", "-c", buf, (char*)0);
+			}
+		}
+		else if (strcmp(buf, "gets") == 0)
+		{
+			// get file name
+		}
+		else if (strcmp(buf, "puts") == 0)
+		{
+			// get file name
 		}
 	}
 }

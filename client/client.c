@@ -6,6 +6,8 @@
 #include <string.h>
 #include "stream.h"
 #include "token.h"
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #define SERV_TCP_PORT 40004
 #define MAXBUF 256
@@ -19,7 +21,7 @@
 
 int createTCPSocket()
 {
-	return socket(AF_INET, SOCKET_STREAM, 0);
+	return socket(AF_INET, SOCK_STREAM, 0);
 }
 
 void helpMenu()
@@ -40,8 +42,7 @@ void helpMenu()
 
 void cmd_pwd(int socket)
 {
-	char code;
-	if (sendCode(socket, PWD) == -1)
+	if (sendCode(socket,(char*) PWD) == -1)
 	{
 		printf("Failed to send pwd command.\n");
 		return;
@@ -53,6 +54,8 @@ void cmd_pwd(int socket)
 
 void cmd_lpwd()
 {
+	pid_t pid = fork();
+	
 	if (pid == 0)
 	{
 		execl("/bin/sh", "sh", "-c", "pwd", (char*)0);
@@ -66,6 +69,8 @@ void cmd_dir()
 
 void cmd_ldir()
 {
+	pid_t pid = fork();
+		
 	if (pid == 0)
 	{
 		execl("/bin/sh", "sh", "-c", "dir", (char*)0);
@@ -78,14 +83,18 @@ void cmd_cd()
 }
 
 void cmd_lcd()
-{
+{		
 	printf("\nPath: ");
-	char tmp[BUFSIZE];
+	char tmp[MAXBUF], buf[MAXBUF];
 	scanf("%s", tmp);
 
-	buf = "cd ";
+	buf[0] = 'c';
+	buf[1] = 'd';
+	buf[2] = ' ';
+
 	strcat(buf, tmp);
 
+	pid_t pid = fork();
 	if (pid == 0)
 	{
 		execl("/bin/sh", "sh", "-c", buf, (char*)0);
@@ -97,7 +106,7 @@ void cmd_get(int socket, char* fn)
 	int fd, filesize;
 	char code;
 
-	if (sendCode(socket, GET) == -1)
+	if (sendCode(socket, (char*) GET) == -1)
 	{
 		printf("Failed to send code.\n");
 		return;
@@ -149,11 +158,11 @@ void cmd_get(int socket, char* fn)
 	int nb = 0;
 	char buf[MAXBUF];
 
-	while ((nb = write(fn, buf, MAXBUF)) > 0)
+	while ((nb = write(socket, buf, MAXBUF)) > 0)
 	{
 		if (getFN(socket, buf, nb) == -1)
 		{
-			print("Failed to send file");
+			printf("Failed to send file");
 			return;
 		}
 	}
@@ -195,7 +204,7 @@ void cmd_put(int socket, char* fn)
 	lseek(fd, 0, SEEK_SET); // Reset file to start
 
 	// Set put code to server
-	if (sendCode(socket, PUT) == -1)
+	if (sendCode(socket, (char*) PUT) == -1)
 	{
 		printf("Failed to send put code.\n");
 		return;
@@ -218,7 +227,7 @@ void cmd_put(int socket, char* fn)
 	// Check for accecptance of file from server
 	if (getCode(socket, &code) == -1)
 	{
-		print("Failed to receive code from server.\n");
+		printf("Failed to receive code from server.\n");
 		return;
 	}
 
@@ -243,7 +252,7 @@ void cmd_put(int socket, char* fn)
 	}
 
 	// Send data code
-	if (sendCode(socket, DATA) == -1)
+	if (sendCode(socket, (char*) DATA) == -1)
 	{
 		printf("Failed to send code for data transfer.\n");
 		return;
@@ -307,12 +316,12 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	ser_addr.sin_addr.s_addr = *(u_long *) hp->h_addr;
+	//ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
 
 	// Creat TCP socket and connect socket to server address
 	socket = createTCPSocket();
 
-	if (connect(socket, (stuct sockaddr *) &ser_addr, sizeof(ser_addr)) < 0)
+	if (connect(socket, (struct sockaddr *) &ser_addr, sizeof(ser_addr)) < 0)
 	{
 		perror("Client connect");
 		exit(1);
@@ -326,7 +335,7 @@ int main(int argc, char* argv[])
 		// Get user input check correct end of string char.
 		fgets(buf, BUFSIZE, stdin);
 		nr = strlen(buf);
-		if (buf[nr - 1] == '\n'
+		if (buf[nr - 1] == '\n')
 		{
 			buf[nr - 1] = '\0';
 			--nr;
@@ -353,7 +362,7 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(buf, "pwd") == 0)
 		{
-			cmd_pwd();
+			cmd_pwd(socket);
 		}
 		else if (strcmp(buf, "lpwd") == 0)
 		{

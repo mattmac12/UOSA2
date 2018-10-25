@@ -1,14 +1,15 @@
 #include "token.h"
 
-int tokenise(char* fiename, char* mytoks[])
+int tokenise(char* filename, char* mytoks[])
 {
 	char *t;
 	int i = 0;
+	char delim = '\n';
 	
-	t = strtok(cmdline, '\n');
-	mytoks[i] = tk;
+	t = strtok(filename, &delim);
+	mytoks[i] = t;
 
-	while(tk != NULL)
+	while(t != NULL)
 	{
 		++i;
 		if (i >= MAX_NUM_TOKENS)
@@ -17,8 +18,8 @@ int tokenise(char* fiename, char* mytoks[])
 			break;
 		}
 
-		t = strtok(NULL, ';');
-		mytoks[i] = tk;
+		t = strtok(NULL, &delim);
+		mytoks[i] = t;
 	}
 	
 	return i;

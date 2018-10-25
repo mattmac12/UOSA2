@@ -1,5 +1,3 @@
-#include <sys/types.h>
-#include <netinet/in.h>
 #include "stream.h"
 
 // 1 byte

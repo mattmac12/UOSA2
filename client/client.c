@@ -117,7 +117,7 @@ void cmd_get(int socket, char* fn)
 
 	if (getCode(socket, &code) == -1)
 	{
-		printf("Failed to send code.\n");
+		printf("Failed to receive code.\n");
 		return;
 	}
 

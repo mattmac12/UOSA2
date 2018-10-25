@@ -15,9 +15,3 @@ int getCode(int socket, char* code);
 int getFNLen(int socket, int* len);
 int getFileSize(int socket, int* len);
 int getFN(int socket, char *buf, int nbytes);
-
-//put
-//get
-//receiving pwd from server
-//receiving dir from server
-

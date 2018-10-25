@@ -1,11 +1,11 @@
 #include "token.h"
 
-int tokenise(char cmdline[], char* mytoks[])
+int tokenise(char* fiename, char* mytoks[])
 {
 	char *t;
 	int i = 0;
 	
-	t = strtok(cmdline, ';');
+	t = strtok(cmdline, '\n');
 	mytoks[i] = tk;
 
 	while(tk != NULL)

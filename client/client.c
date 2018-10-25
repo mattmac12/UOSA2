@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include "stream.h"
+#include "token.h"
 
 #define SERV_TCP_PORT 40004
 #define MAXBUF 256
@@ -19,12 +20,6 @@
 int createTCPSocket()
 {
 	return socket(AF_INET, SOCKET_STREAM, 0);
-}
-
-int createConnection(int sd, struct sockaddr* RSA, int RSAlen)
-{
-	return connect(sd, RSA, RSAlen); // Backlog assumed to be 5
-	// If 0 exit
 }
 
 void helpMenu()
@@ -43,9 +38,17 @@ void helpMenu()
 	printf("*******************************************************************************************************");
 }
 
-void cmd_pwd()
+void cmd_pwd(int socket)
 {
+	char code;
+	if (sendCode(socket, PWD) == -1)
+	{
+		printf("Failed to send pwd command.\n");
+		return;
+	}
 
+	//recv string size
+	//recv data
 }
 
 void cmd_lpwd()
@@ -253,15 +256,14 @@ void cmd_put(int socket, char* fn)
 		return;
 	}
 
-	// Send data
-	int nb = 0;
-	char buf[MAXBUF];
+	char* mytoks[MAX_NUM_TOKENS];
+	int num_of_tokens = tokenise(fn, mytoks);
 
-	while ((nb = read(fn, buf, MAXBUF)) > 0)
+	for (int i = 0; i < num_of_tokens; i++)
 	{
-		if (sendFN(socket, buf, nb) == -1)
+		if (sendFN(socket, mytoks[i], MAXBUF) == -1)
 		{
-			print("Failed to send file");
+			printf("Failed to send data");
 			return;
 		}
 	}
@@ -334,7 +336,11 @@ int main(int argc, char* argv[])
 		// fork();
 		// execl("/bin/sh", "sh", "-c", command, (char*) 0);
 
-		pid = fork();
+		if (pid = fork() != 0)
+		{
+			printf("Fork failed ... Quitting program ...\n");
+			return -1;
+		}
 
 		if (strcmp(buf, "quit") == 0)
 		{

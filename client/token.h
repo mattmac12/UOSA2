@@ -7,4 +7,4 @@
 
 #define MAX_NUM_TOKENS 100
 
-int tokenise(char cmdline[], char* mytoks[]);
+int tokenise(char* fiename, char* mytoks[]);

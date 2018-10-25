@@ -1,4 +1,6 @@
 #include  "stream.h"	//deals with sending and receiving to/from clients.
+#include  <stdlib.h>
+#include  <stdio.h>
 #include  <string.h>     /* strlen(), strcmp() etc */
 #include  <errno.h>      /* extern int errno, EINTR, perror() */
 #include  <sys/types.h>  /* pid_t, u_long, u_short */
@@ -7,7 +9,6 @@
 /* and INADDR_ANY */
 
 #define   SERV_TCP_PORT   40004           /* server port no */
-#define   BUFSIZE         (1024*256)
 
 void daemon_init(void)
 {
@@ -30,7 +31,7 @@ void daemon_init(void)
 	umask(0);               /* clear our file mode creation mask */
 }
 
-void serve_a_client(int sd)
+void serve_a_client(int socket)
 {
 	int nr, nw, i = 0;
 	char buf[BUFSIZE];
@@ -39,7 +40,7 @@ void serve_a_client(int sd)
 	while (++i) {
 	
 		//read data from the client
-		if getCode(socket, &code) == -1)
+		if (getCode(socket, &code) == -1)
 		{
 			exit(0); /* connection broken down */
 		}
@@ -50,15 +51,24 @@ void serve_a_client(int sd)
 		/*switch(code)
 		{
 			case 'a':
-				
+				//pwd
 				break;
 			case 'b':
+				//dir
 				break;
 			case 'c':
+				//cd
+				
 				break;
 			case 'd':
+				//client requesting file from server
+				//receive length of filename
+				//receive filename
 				break;
 			case 'e':
+				//client putting file on server
+				//receive length of filename
+				//receive filename
 				break;
 		}*/
 	}

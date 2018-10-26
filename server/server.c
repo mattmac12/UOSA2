@@ -33,24 +33,23 @@ void daemon_init(void)
 
 void serve_a_client(int socket)
 {
-	int nr, nw, i = 0;
-	char buf[BUFSIZE];
 	char code;
 	
-	while (++i) {
+	while (free) {
 	
 		//read data from the client
-		if (getCode(socket, &code) == -1)
+		if (getCode(socket, &code) <= 0)
 		{
 			exit(0); /* connection broken down */
 		}
 		/* read data from client */
 		
-		printf("server[%d]: Received code: %c \n", i, code);
+		printf("server[%d]: Received code: %c \n", pid, code);
 
-		/*switch(code)
+		switch(code)
 		{
 			case 'a':
+				printf("We made to A \n");
 				//pwd
 				break;
 			case 'b':
@@ -70,7 +69,8 @@ void serve_a_client(int socket)
 				//receive length of filename
 				//receive filename
 				break;
-		}*/
+		}
+	
 	}
 }
 

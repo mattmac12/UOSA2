@@ -1,7 +1,7 @@
 #include "stream.h"
 
 // 1 byte
-int sendCode(int socket, char* code)
+int sendOneByte(int socket, char* code)
 {
 	if (write(socket, (char*)&code, 1) != 1)
 	{
@@ -12,7 +12,7 @@ int sendCode(int socket, char* code)
 }
 
 // 2 bytes
-int sendFNLen(int socket, int len)
+int sendTwoBytes(int socket, int len)
 {
 	short data = len;
 	data = htons(data);
@@ -26,7 +26,7 @@ int sendFNLen(int socket, int len)
 }
 
 // 4 bytes
-int sendFileSize(int socket, int len)
+int sendFourBytes(int socket, int len)
 {
 	int data = htonl(len);
 
@@ -39,7 +39,7 @@ int sendFileSize(int socket, int len)
 }
 
 // n bytes
-int sendFN(int socket, char *buf, int nbytes)
+int sendNBytes(int socket, char *buf, int nbytes)
 {
 	int n = 0;
 
@@ -54,7 +54,7 @@ int sendFN(int socket, char *buf, int nbytes)
 	return n;
 }
 
-int getCode(int socket, char* code) // 1 byte
+int getOneByte(int socket, char* code) // 1 byte
 {
 	if (read(socket, (char*)&code, 1) != 1)
 	{
@@ -64,7 +64,7 @@ int getCode(int socket, char* code) // 1 byte
 	return 1;
 }
 
-int getFNLen(int socket, int* len) // 2 bytes
+int getTwoBytes(int socket, int* len) // 2 bytes
 {
 	short tmp = 0;
 
@@ -81,7 +81,7 @@ int getFNLen(int socket, int* len) // 2 bytes
 	return 1;
 }
 
-int getFileSize(int socket, int* len) // 4 bytes
+int getFourBytes(int socket, int* len) // 4 bytes
 {
 	int tmp = 0;
 
@@ -94,7 +94,7 @@ int getFileSize(int socket, int* len) // 4 bytes
 	len = &tmp;
 }
 
-int getFN(int socket, char *buf, int nbytes) // n bytes
+int getNBytes(int socket, char *buf, int nbytes) // n bytes
 {
 	int n = 0;
 

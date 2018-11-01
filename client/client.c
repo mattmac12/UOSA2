@@ -5,7 +5,6 @@
 #include <netinet/in.h>
 #include <string.h>
 #include "stream.h"
-#include "token.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 
@@ -18,11 +17,6 @@
 #define GET 'd'
 #define PUT 'e'
 #define DATA 'f'
-
-int createTCPSocket()
-{
-	return socket(AF_INET, SOCK_STREAM, 0);
-}
 
 void helpMenu()
 {
@@ -42,14 +36,31 @@ void helpMenu()
 
 void cmd_pwd(int socket)
 {
-	if (sendCode(socket,(char*) PWD) == -1)
+	int dirSize;
+	char buf[MAXBUF];
+
+	// Send PWD code to server
+	if (sendOneByte(socket,(char*) PWD) == -1)
 	{
 		printf("Failed to send pwd command.\n");
 		return;
 	}
 
-	//recv string size
-	//recv data
+	// Get size of directory
+	if (getFourBytes(socket, &dirSize) == -1)
+	{
+		printf("Failed to get directory length.\n");
+		return;
+	}
+
+	// Get directory data
+	if (getNBytes(socket, buf, sizeof(buf)) == -1)
+	{
+		printf("Failed to get directory.\n");
+		return;
+	}
+
+	printf("\n%s", buf);
 }
 
 void cmd_lpwd()
@@ -62,9 +73,33 @@ void cmd_lpwd()
 	}
 }
 
-void cmd_dir()
+void cmd_dir(int socket)
 {
+	int dirSize;
+	char buf[MAXBUF];
 
+	// Send PWD code to server
+	if (sendOneByte(socket, (char*)PWD) == -1)
+	{
+		printf("Failed to send dir command.\n");
+		return;
+	}
+
+	// Get size of directory
+	if (getFourBytes(socket, &dirSize) == -1)
+	{
+		printf("Failed to get directory length.\n");
+		return;
+	}
+
+	// Get directory data
+	if (getNBytes(socket, buf, sizeof(buf)) == -1)
+	{
+		printf("Failed to get directory.\n");
+		return;
+	}
+
+	printf("\n%s", buf);
 }
 
 void cmd_ldir()
@@ -77,9 +112,70 @@ void cmd_ldir()
 	}
 }
 
-void cmd_cd()
+void cmd_cd(int socket, char* cdpath)
 {
+	// Send cd code
+	// if cd path
+	// send 1 byte code for path
+	// send 4 bytes for path data size
+	// send n bytes for path data
+	// receive ackcode
+	// else
+	// receive ackcode
 
+	char* code;
+
+	if (sendOneByte(socket, (char*)CD) == -1)
+	{
+		printf("Failed to send CD code.\n");
+		return;
+	}
+
+	if (strcmp(cdpath, ""))
+	{
+		if (sendOneByte(socket, (char*) '0') == -1)
+		{
+			printf("Failed to send no path code.\n");
+			return;
+		}
+
+		if (getOneByte(socket, code) == -1)
+		{
+			printf("Failed to get code back from server.\n");
+			return;
+		}
+
+		printf("Directory successfully returned to home.\n");
+	}
+	else
+	{
+		if (sendOneByte(socket, (char*) '1') == -1)
+		{
+			printf("Failed to send path code.\n");
+			return;
+		}
+
+		if (sendFourBytes(socket, sizeof(cdpath)) == -1)
+		{
+			printf("Failed to send size of path.\n");
+			return;
+		}
+		
+		if (sendNBytes(socket, cdpath, sizeof(cdpath)) == -1)
+		{
+			printf("Failed to send cdpath.\n");
+			return;
+		}
+
+		if (getOneByte(socket, code) == -1)
+		{
+			printf("Failed to get code back from server.\n");
+			return;
+		}
+
+		printf("Directory successfully changed to %s.\n", cdpath);
+	}
+	
 }
 
 void cmd_lcd()
@@ -103,64 +199,63 @@ void cmd_lcd()
 
 void cmd_get(int socket, char* fn)
 {
+	// send 1 byte code - G
+	// send 2 btye code in 2s compliment and in network byte order - filename len
+	// send n bytes - filename
+
+	// receive 1 byte code - 0 failed 1 good
+
+	// receive 4 byte int - n - len of file
+	// receive n bytes - file
+
 	int fd, filesize;
 	char code;
 
-	if (sendCode(socket, (char*) GET) == -1)
+	// Send get code
+	if (sendOneByte(socket, (char*) GET) == -1)
 	{
 		printf("Failed to send code.\n");
 		return;
 	}
-
-	if (sendFNLen(socket, strlen(fn)) == -1)
+	// Send file name length
+	if (sendTwoBytes(socket, strlen(fn)) == -1)
 	{
 		printf("Failed to send length of filename.\n");
 		return;
 	}
-
-	if (sendFN(socket, fn, strlen(fn)) == -1)
+	// Send file name
+	if (sendNBytes(socket, fn, strlen(fn)) == -1)
 	{
 		printf("Failed to send filename.\n");
 		return;
 	}
-
-	if (getCode(socket, &code) == -1)
+	// Get confirmation code from server
+	if (getOneByte(socket, &code) == -1)
 	{
 		printf("Failed to receive code.\n");
 		return;
 	}
-
+	// Check code from server
 	if (code != '1')
 	{
 		printf("Failed to locate file on server.\n");
 		return;
 	}
-
-	if (getCode(socket, &code) == -1)
-	{
-		printf("Failed to get code.\n");
-		return;
-	}
-
-	if (code != DATA)
-	{
-		printf("Failed to get a valid response from server.\n");
-		return;
-	}
-
-	if (getFNLen(socket, &filesize) == -1)
+	// Get file length from server
+	if (getTwoBytes(socket, &filesize) == -1)
 	{
 		printf("Failed to get file size.\n");
 		return;
 	}
 
-	// Get data
+	// Get file from server
+	/* check this */
 	int nb = 0;
 	char buf[MAXBUF];
 
 	while ((nb = write(socket, buf, MAXBUF)) > 0)
 	{
-		if (getFN(socket, buf, nb) == -1)
+		if (getNBytes(socket, buf, nb) == -1)
 		{
 			printf("Failed to send file");
 			return;
@@ -178,7 +273,18 @@ void cmd_get(int socket, char* fn)
 
 void cmd_put(int socket, char* fn)
 {
+	// 1 byte code - 'P'
+	// 2 byte int 2s compliment and in network byte order len of filename to be sent by server
+	// send sequence of ascii chars rep file name
+
+	// receive ack code (0 = good)
+
+	// 1 byte code - 'B'
+	// 4 byte int in 2s compliment and in network byute order which represents the length of the file
+	// n bytes - contents of file
+
 	int fd, filesize;
+	int nr = 0;
 	struct stat st; // https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
 	char code;
 
@@ -204,75 +310,53 @@ void cmd_put(int socket, char* fn)
 	lseek(fd, 0, SEEK_SET); // Reset file to start
 
 	// Set put code to server
-	if (sendCode(socket, (char*) PUT) == -1)
+	if (sendOneByte(socket, (char*) PUT) == -1)
 	{
 		printf("Failed to send put code.\n");
 		return;
 	}
 
 	// Send Length of filename to server.
-	if (sendFNLen(socket, strlen(fn)) == -1)
+	if (sendTwoBytes(socket, strlen(fn)) == -1)
 	{
 		printf("Failed to send filename length.\n");
 		return;
 	}
 
 	// Send filename to server.
-	if (sendFN(socket, fn, strlen(fn)) <= 0)
+	if (sendNBytes(socket, fn, strlen(fn)) <= 0)
 	{
 		printf("Failed to send filename.\n");
 		return;
 	}
 
 	// Check for accecptance of file from server
-	if (getCode(socket, &code) == -1)
+	/* add more error checking here */
+	if (getOneByte(socket, &code) != 0)
 	{
-		printf("Failed to receive code from server.\n");
-		return;
-	}
-
-	if (code != PUT)
-	{
-		printf("Failed to get correct code from server.\n");
-		return;
-	}
-
-	// Get code from server making sure they can accecpt file
-	if (getCode(socket, &code) == -1)
-	{
-		printf("Failed to read server file creation code.\n");
-		return;
-	}
-
-	// If file can't be accecpted
-	if (code != '1')
-	{
-		printf("Server failed to accecpt put command.\n");
+		printf("Failed to accecpt command on server.\n");
 		return;
 	}
 
 	// Send data code
-	if (sendCode(socket, (char*) DATA) == -1)
+	if (sendOneByte(socket, (char*) DATA) == -1)
 	{
 		printf("Failed to send code for data transfer.\n");
 		return;
 	}
 
 	// Send filesize code
-	if (sendFileSize(socket, strlen(fn)) == -1)
+	if (sendFourBytes(socket, strlen(fn)) == -1)
 	{
 		printf("Failed to send filesize.\n");
 		return;
 	}
 
-	char* mytoks[MAX_NUM_TOKENS];
-	int num_of_tokens = tokenise(fn, mytoks);
-
-	for (int i = 0; i < num_of_tokens; i++)
+	while ((nr = read(fd, buf, FILE_BLOCK_SIZE)) > 0)
 	{
-		if (sendFN(socket, mytoks[i], MAXBUF) == -1)
+		if (sendNBytes(socket, buf, nr) == -1)
 		{
-			printf("Failed to send data");
+			printf("Failed to send file");
 			return;
 		}
 	}
@@ -283,21 +367,36 @@ void cmd_put(int socket, char* fn)
 int main(int argc, char* argv[])
 {
 	int socket, n, nr, nw, i = 0;
-	char buf[BUFSIZE], host[BUFSIZE];
+	char buf[BUFSIZE], host[60];
+	unsigned short port;
 	struct sockaddr_in ser_addr;
 	struct hostent *hp;
 	char* fn = "NULL";
-
-	pid_t pid;
 
 	// Get server host name
 	if (argc == 1) // Assume server running on the local host
 	{
 		gethostname(host, sizeof(host));
+		port = SERV_TCP_PORT;
 	}
 	else if (argc == 2) // Use the given host name
 	{
 		strcpy(host, argv[1]);
+		port = SERV_TCP_PORT;
+	}
+	else if (argc == 3)
+	{
+		strcpy(host, argv[1]);
+		int n = atoi(argv[2]);
+		if (n >= 1024 && n < 65536)
+		{
+			port = n;
+		}
+		else
+		{
+			printf("Error: server port number must be between 1024 and 65535.\n");
+			exit(1);
+		}
 	}
 	else
 	{
@@ -308,7 +407,7 @@ int main(int argc, char* argv[])
 	// Get host address and build a server socket address
 	bzero((char *)&ser_addr, sizeof(ser_addr));
 	ser_addr.sin_family = AF_INET;
-	ser_addr.sin_port = htons(SERV_TCP_PORT);
+	ser_addr.sin_port = htons(port);
 
 	if ((hp = gethostbyname(host)) == NULL)
 	{
@@ -316,10 +415,10 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	//ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
+	ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
 
 	// Creat TCP socket and connect socket to server address
-	socket = createTCPSocket();
+	socket = socket(PF_INET, SOCK_STREAM, 0);
 
 	if (connect(socket, (struct sockaddr *) &ser_addr, sizeof(ser_addr)) < 0)
 	{
@@ -333,22 +432,13 @@ int main(int argc, char* argv[])
 		printf(">> ");
 
 		// Get user input check correct end of string char.
-		fgets(buf, BUFSIZE, stdin);
+		fgets(buf, sizeof(buf), stdin);
 		nr = strlen(buf);
+
 		if (buf[nr - 1] == '\n')
 		{
 			buf[nr - 1] = '\0';
 			--nr;
-		}
-
-		// From here onwards will be a if-else loop strcmp(buf, "<command>" == 0)
-		// fork();
-		// execl("/bin/sh", "sh", "-c", command, (char*) 0);
-
-		if (pid = fork() != 0)
-		{
-			printf("Fork failed ... Quitting program ...\n");
-			return -1;
 		}
 
 		if (strcmp(buf, "quit") == 0)
@@ -370,7 +460,7 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(buf, "dir") == 0)
 		{
-			cmd_dir();
+			cmd_dir(socket);
 		}
 		else if (strcmp(buf, "ldir") == 0)
 		{
@@ -379,7 +469,7 @@ int main(int argc, char* argv[])
 		else if (strcmp(buf, "cd") == 0)
 		{
 			// get file path
-			cmd_cd();
+			cmd_cd(socket);
 		}
 		else if (strcmp(buf, "lcd") == 0)
 		{
@@ -389,12 +479,18 @@ int main(int argc, char* argv[])
 		{
 			// get file name from user
 			// check its valid
+			printf("Filename: ");
+			fgets(fn, MAXBUF, stdin);
+
 			cmd_get(socket, fn);
 		}
 		else if (strcmp(buf, "puts") == 0)
 		{
 			// get file name from user
 			// check its valid
+			printf("Filename: ");
+			fgets(fn, MAXBUF, stdin);
+
 			cmd_put(socket, fn);
 		}
 	}

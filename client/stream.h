@@ -3,15 +3,15 @@
 #include <netinet/in.h>
 #define BUFSIZE (1024 * 256)
 
-int sendCode(int socket, char* code); // 1 byte
-int sendFNLen(int socket, int len); // 2 bytes
-int sendFileSize(int socket, int len); // 4 bytes
-int sendFN(int socket, char *buf, int nbytes); // nbytes
+int sendOneByte(int socket, char* code); // 1 byte
+int sendTwoBytes(int socket, int len); // 2 bytes
+int sendFourBytes(int socket, int len); // 4 bytes
+int sendNBytes(int socket, char *buf, int nbytes); // nbytes
 
-int getCode(int socket, char* code);
-int getFNLen(int socket, int* len);
-int getFileSize(int socket, int* len);
-int getFN(int socket, char *buf, int nbytes);
+int getOneByte(int socket, char* code);
+int getTwoBytes(int socket, int* len);
+int getFourBytes(int socket, int* len);
+int getNBytes(int socket, char *buf, int nbytes);
 
 //put
 //get

@@ -34,6 +34,11 @@ void helpMenu()
 	printf("*******************************************************************************************************");
 }
 
+int createTCPSocket()
+{
+	return socket(PF_INET, SOCK_STREAM, 0);
+}
+
 void cmd_pwd(int socket)
 {
 	int dirSize;
@@ -352,7 +357,8 @@ void cmd_put(int socket, char* fn)
 		return;
 	}
 
-	while ((nr = read(fd, buf, FILE_BLOCK_SIZE)) > 0)
+	char* buf;
+	while ((nr = read(fd, buf, MAXBUF)) > 0)
 	{
 		if (sendNBytes(socket, buf, nr) == -1)
 		{
@@ -415,10 +421,10 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 
-	ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
+	//ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
 
 	// Creat TCP socket and connect socket to server address
-	socket = socket(PF_INET, SOCK_STREAM, 0);
+	socket = createTCPSocket();
 
 	if (connect(socket, (struct sockaddr *) &ser_addr, sizeof(ser_addr)) < 0)
 	{
@@ -469,7 +475,11 @@ int main(int argc, char* argv[])
 		else if (strcmp(buf, "cd") == 0)
 		{
 			// get file path
-			cmd_cd(socket);
+			char path[MAXBUF];
+			printf("\nPath: ");
+			fgets(path, MAXBUF, stdin);
+
+			cmd_cd(socket, path);
 		}
 		else if (strcmp(buf, "lcd") == 0)
 		{

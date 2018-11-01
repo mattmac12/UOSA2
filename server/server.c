@@ -44,7 +44,7 @@ void serve_a_client(int socket)
 		}
 		/* read data from client */
 		
-		printf("server[%d]: Received code: %c \n", pid, code);
+		printf("server[%d]: Received code: %c \n", socket, code);
 
 		switch(code)
 		{

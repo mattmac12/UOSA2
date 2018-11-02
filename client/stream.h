@@ -1,6 +1,8 @@
 #pragma once
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <unistd.h>
+#include <stdio.h>
 #define BUFSIZE (1024 * 256)
 
 int sendOneByte(int socket, char* code); // 1 byte

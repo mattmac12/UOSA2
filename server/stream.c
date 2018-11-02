@@ -1,7 +1,6 @@
-#include <sys/types.h>
-#include <netinet/in.h>
 #include "stream.h"
 
+/*
 int readn(int fd, char *buf, int bufsize)
 {
 	short data_size; 
@@ -69,6 +68,7 @@ int writen(int fd, char* buf, int nbytes)
 
 	return n;
 }
+*/
 // 1 byte
 int sendCode(int socket, char* code)
 {
@@ -110,11 +110,12 @@ int sendFileSize(int socket, int len)
 // n bytes
 int sendFN(int socket, char *buf, int nbytes)
 {
+	printf("%s\n", buf);
 	int n = 0;
 
 	for (int i = 0; i < nbytes; i += n)
 	{
-		if ((n = write(socket, buf + i, nbytes - i)) <= 0)
+		if ((n = write(socket, buf + i, nbytes - 1)) <= 0)
 		{
 			return n; // Write error
 		}
@@ -125,10 +126,13 @@ int sendFN(int socket, char *buf, int nbytes)
 
 int getCode(int socket, char* code) // 1 byte
 {
-	if (read(socket, (char*)&code, 1) != 1)
+//printf("ENTER FINE\n");
+	if (read(socket, code, 1) != 1)
 	{
+//printf("EXIT ERROR \n");
 		return -1;
 	}
+//printf("EXIT FINE : %c\n", &code);
 
 	return 1;
 }
@@ -161,6 +165,8 @@ int getFileSize(int socket, int* len) // 4 bytes
 
 	tmp = ntohl(tmp);
 	len = &tmp;
+
+return 1;
 }
 
 int getFN(int socket, char *buf, int nbytes) // n bytes
@@ -169,7 +175,7 @@ int getFN(int socket, char *buf, int nbytes) // n bytes
 
 	for (int i = 0; i < nbytes && n > 0; i += n)
 	{
-		if ((n = read(socket, buf + i, nbytes - i)) <= 0)
+		if ((n = read(socket, buf + i, nbytes - 1)) <= 0)
 		{
 			return n; // read error
 		}

@@ -3,10 +3,13 @@
 // 1 byte
 int sendOneByte(int socket, char* code)
 {
+	//printf("ENTER\n");
 	if (write(socket, (char*)&code, 1) != 1)
 	{
+		//printf("ERROR\n");
 		return -1;
 	}
+	//printf("FINE EXITING\n");
 
 	return 1;
 }
@@ -76,15 +79,15 @@ int getTwoBytes(int socket, int* len) // 2 bytes
 	tmp = ntohs(tmp);
 	
 	int tmpconv = (int)tmp;
-	len = &tmpconv;
+	len = (int*)tmpconv; //here
 
 	return 1;
 }
 
 int getFourBytes(int socket, int* len) // 4 bytes
-{
+{ 
+//here
 	int tmp = 0;
-
 	if (read(socket, &tmp, 4) != 4)
 	{
 		return -1;
@@ -92,6 +95,7 @@ int getFourBytes(int socket, int* len) // 4 bytes
 
 	tmp = ntohl(tmp);
 	len = &tmp;
+	return 1;
 }
 
 int getNBytes(int socket, char *buf, int nbytes) // n bytes

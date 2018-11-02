@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define SERV_TCP_PORT 40004
+#define SERV_TCP_PORT 40008
 #define MAXBUF 256
 
 #define PWD 'a'
@@ -57,6 +57,7 @@ void cmd_pwd(int socket)
 		printf("Failed to get directory length.\n");
 		return;
 	}
+	printf("dirSize: %d\n", dirSize);
 
 	// Get directory data
 	if (getNBytes(socket, buf, sizeof(buf)) == -1)
@@ -65,7 +66,7 @@ void cmd_pwd(int socket)
 		return;
 	}
 
-	printf("\n%s", buf);
+	printf("BUF: %s\n", buf);
 }
 
 void cmd_lpwd()

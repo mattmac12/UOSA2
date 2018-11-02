@@ -8,7 +8,7 @@
 #include  <netinet/in.h> /* struct sockaddr_in, htons(), htonl(), */
 /* and INADDR_ANY */
 
-#define   SERV_TCP_PORT   40004           /* server port no */
+#define   SERV_TCP_PORT   40008           /* server port no */
 
 void daemon_init(void)
 {
@@ -43,13 +43,24 @@ void serve_a_client(int socket)
 			exit(0); /* connection broken down */
 		}
 		/* read data from client */
-		
+
 		printf("server[%d]: Received code: %c \n", socket, code);
 
 		switch(code)
 		{
 			case 'a':
-				printf("We made to A \n");
+				printf(""); // Does not compile unless this is here
+				char tests[4];
+				tests[0] = 'a';
+				tests[1] = 'b';
+				tests[2] = 'c';
+				tests[3] = '\0';
+				int test = strlen(tests);
+				
+				printf("string: %s\n", tests);
+
+				sendFileSize(socket, test); //4b
+				sendFN(socket, &tests, test); //nb
 				//pwd
 				break;
 			case 'b':

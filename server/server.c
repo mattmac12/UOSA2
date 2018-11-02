@@ -8,8 +8,9 @@
 #include  <netinet/in.h> /* struct sockaddr_in, htons(), htonl(), */
 /* and INADDR_ANY */
 #include <dirent.h>
+#include <fcntl.h>
 
-#define   SERV_TCP_PORT   40008           /* server port no */
+#define   SERV_TCP_PORT   40004           /* server port no */
 #define MAXBUF 256
 
 void daemon_init(void)
@@ -108,6 +109,83 @@ void cmd_cd(int socket)
 
 }
 
+void cmd_put(int socket)
+{
+	int nameLen, fileLen;
+	char fileName[MAXBUF], file[MAXBUF];
+
+	if (getFileSize(socket, &nameLen) == -1)
+	{
+		printf("Error getting file name size\n");
+		return;
+	}
+	printf("File name size: %d\n", nameLen);
+			
+	if(getFN(socket, fileName, sizeof(fileName)) == -1)
+	{
+		printf("Error getting name\n");
+		return;
+	}
+	fileName[nameLen] = '\0';
+	printf("File name: %s\n", fileName);
+	
+	if(getFileSize(socket, &fileLen) == -1)
+	{
+		printf("Error getting file size\n");
+		return;
+	}
+	printf("File size: %d\n", fileLen);
+
+	if(getFN(socket, file, sizeof(file)) == -1)
+	{
+		printf("Error getting file\n");
+		return;
+	}
+	
+	FILE *fp = fopen(fileName, "w");
+	fprintf(fp, file);
+	fclose(fp);
+	printf("File data: %s\n", file);
+}
+
+void cmd_get(int socket)
+{
+	int nameLen, fileLen, fd;
+	char fileName[MAXBUF], file[MAXBUF];
+
+	getFileSize(socket, &nameLen);
+	printf("File name size: %d\n", nameLen);
+
+	getFN(socket, fileName, MAXBUF);
+	fileName[nameLen] = '\0';
+	printf("File name: %s", fileName);
+
+	fileName[strlen(fileName) - 1] = '\0';
+
+	// Open file
+	if ((fd = open(fileName, O_RDONLY)) == -1)
+	{
+		printf("Failed to open file: %s\n", fileName);
+		return;
+	}
+	
+	// Read data
+	if (read(fd, file, sizeof(file)) < 0)
+	{
+		printf("Read error\n");		
+		return;
+	}
+	close (fd);
+
+	fileLen = sizeof(file);
+
+	printf("File size: %d\n", fileLen);
+	sendFileSize(socket, fileLen);
+
+	printf("File data: %s\n", file);
+	sendFN(socket, file, fileLen);
+}
+
 void serve_a_client(int socket)
 {
 	char code;
@@ -123,28 +201,9 @@ void serve_a_client(int socket)
 
 		printf("server[%d]: Received code: %c \n", socket, code);
 
-		int nameLen, fileLen;
-		char fileName[MAXBUF], file[MAXBUF];
-
 		switch(code)
 		{
 			case 'a':
-				/*
-				printf(""); // Does not compile unless this is here
-
-				char tests[4];
-				tests[0] = 'a';
-				tests[1] = 'b';
-				tests[2] = 'c';
-				tests[3] = '\0';
-				int test = sizeof(tests);
-
-				sendFileSize(socket, test); //4b
-				sendFN(socket, &tests, test); //nb
-
-				printf("Completed PWD command\n");
-				//pwd
-				*/
 				cmd_pwd(socket);
 				break;
 			case 'b':
@@ -160,24 +219,14 @@ void serve_a_client(int socket)
 				//client requesting file from server
 				//receive length of filename
 				//receive filename
+				cmd_get(socket);
 				break;
 			case 'e':
 				//client putting file on server
 				//receive length of filename
 				//receive filename
 
-				getFileSize(socket, &nameLen);
-				printf("File name size: %d\n", nameLen);
-			
-				getFN(socket, fileName, sizeof(fileName));
-				fileName[nameLen] = '\0';
-				printf("File name: %s\n", fileName);
-
-				getFileSize(socket, &fileLen);
-				printf("File size: %d\n", fileLen);
-
-				getFN(socket, file, sizeof(file));
-				printf("File data: %s\n", file);
+				cmd_put(socket);
 	
 				break;
 		}

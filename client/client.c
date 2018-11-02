@@ -20,18 +20,18 @@
 
 void helpMenu()
 {
-	printf("*******************************************************************************************************");
-	printf("---------------------------------------------- HELP MENU ----------------------------------------------");
-	printf("pwd - Display the current directory of the server.");
-	printf("lpdw - Display your current directory.");
-	printf("dir - Display the file names under the current directory of the server.");
-	printf("ldir - Display the file names under your current directory.");
-	printf("cd <directory_pathname> - Change the current directory of the server to a specified directory.");
-	printf("lcd <directory_pathname> - Change your current directory to the specified directory.");
-	printf("get <filename> - Download the file with specified filename from the servers current directory.");
-	printf("put <filename> - Upload the file with specified filename from your current directory to the server.");
-	printf("quit - Terminate the session and close the program.");
-	printf("*******************************************************************************************************");
+	printf("************************************************************\n");
+	printf("-------------------------- HELP MENU --------------------------\n");
+	printf("pwd - Display the current directory of the server.\n");
+	printf("lpwd - Display your current directory.\n");
+	printf("dir - Display the file names under the current directory of the server.\n");
+	printf("ldir - Display the file names under your current directory.\n");
+	printf("cd <directory_pathname> - Change the current directory of the server to a specified directory.\n");
+	printf("lcd <directory_pathname> - Change your current directory to the specified directory.\n");
+	printf("get <filename> - Download the file with specified filename from the servers current directory.\n");
+	printf("put <filename> - Upload the file with specified filename from your current directory to the server.\n");
+	printf("quit - Terminate the session and close the program.\n");
+	printf("************************************************************\n");
 }
 
 int createTCPSocket()
@@ -50,6 +50,7 @@ void cmd_pwd(int socket)
 		printf("Failed to send pwd command.\n");
 		return;
 	}
+	//printf("sent code\n");
 
 	// Get size of directory
 	if (getFourBytes(socket, &dirSize) == -1)
@@ -57,16 +58,16 @@ void cmd_pwd(int socket)
 		printf("Failed to get directory length.\n");
 		return;
 	}
-	printf("dirSize: %d\n", dirSize);
+	//printf("PWD String size: %d\n", dirSize);
 
 	// Get directory data
-	if (getNBytes(socket, buf, sizeof(buf)) == -1)
+	if (getNBytes(socket, buf, MAXBUF) == -1)
 	{
 		printf("Failed to get directory.\n");
 		return;
 	}
 
-	printf("BUF: %s\n", buf);
+	printf("Server PWD: %s\n", buf);
 }
 
 void cmd_lpwd()
@@ -85,7 +86,7 @@ void cmd_dir(int socket)
 	char buf[MAXBUF];
 
 	// Send PWD code to server
-	if (sendOneByte(socket, (char*)PWD) == -1)
+	if (sendOneByte(socket, (char*)DIR) == -1)
 	{
 		printf("Failed to send dir command.\n");
 		return;
@@ -105,7 +106,7 @@ void cmd_dir(int socket)
 		return;
 	}
 
-	printf("\n%s", buf);
+	printf("Server DIR: %s", buf);
 }
 
 void cmd_ldir()
@@ -118,17 +119,12 @@ void cmd_ldir()
 	}
 }
 
-void cmd_cd(int socket, char* cdpath)
+void cmd_cd(int socket)
 {
-	// Send cd code
-	// if cd path
-	// send 1 byte code for path
-	// send 4 bytes for path data size
-	// send n bytes for path data
-	// receive ackcode
-	// else
-	// receive ackcode
-
+	char path[MAXBUF];
+	printf("\nPath: ");
+	fgets(path, MAXBUF, stdin);
+	//path[strlen(path) - 1] = '\0';
 	char* code;
 
 	if (sendOneByte(socket, (char*)CD) == -1)
@@ -137,70 +133,27 @@ void cmd_cd(int socket, char* cdpath)
 		return;
 	}
 
-	if (strcmp(cdpath, ""))
+	if (sendFourBytes(socket, strlen(path)) == -1)
 	{
-		if (sendOneByte(socket, (char*) '0') == -1)
-		{
-			printf("Failed to send no path code.\n");
-			return;
-		}
-
-		if (getOneByte(socket, code) == -1)
-		{
-			printf("Failed to get code back from server.\n");
-			return;
-		}
-
-		printf("Directory successfully returned to home.\n");
+		printf("Failed to send path length.\n");
+		return;
 	}
-	else
+
+	if (sendNBytes(socket, path, strlen(path)) == -1)
 	{
-		if (sendOneByte(socket, (char*) '1') == -1)
-		{
-			printf("Failed to send path code.\n");
-			return;
-		}
-
-		if (sendFourBytes(socket, sizeof(cdpath)) == -1)
-		{
-			printf("Failed to send size of path.\n");
-			return;
-		}
-		
-		if (sendNBytes(socket, cdpath, sizeof(cdpath)) == -1)
-		{
-			printf("Failed to send cdpath.\n");
-			return;
-		}
-
-		if (getOneByte(socket, code) == -1)
-		{
-			printf("Failed to get code back from server.\n");
-			return;
-		}
-
-		printf("Directory successfully changed to %s.\n", cdpath);
+		printf("Failed to send path.\n");
+		return;
 	}
-	
 }
 
 void cmd_lcd()
-{		
+{	
+	char path[MAXBUF];
 	printf("\nPath: ");
-	char tmp[MAXBUF], buf[MAXBUF];
-	scanf("%s", tmp);
+	fgets(path, MAXBUF, stdin);
+	path[strlen(path) - 1] = '\0';		
 
-	buf[0] = 'c';
-	buf[1] = 'd';
-	buf[2] = ' ';
-
-	strcat(buf, tmp);
-
-	pid_t pid = fork();
-	if (pid == 0)
-	{
-		execl("/bin/sh", "sh", "-c", buf, (char*)0);
-	}
+	chdir(path);
 }
 
 void cmd_get(int socket, char* fn)
@@ -359,26 +312,30 @@ void cmd_put(int socket, char* fn)
 	}
 
 	char* buf;
-	while ((nr = read(fd, buf, MAXBUF)) > 0)
-	{
+
+	read(fd, buf, MAXBUF);
+	buf[strlen(buf)+1] = '\0';
+	//while ((nr = read(fd, buf, MAXBUF)) > 0)
+	//{
 		if (sendNBytes(socket, buf, nr) == -1)
 		{
 			printf("Failed to send file");
 			return;
 		}
-	}
+	//}
 
 	printf("%s has been sent to server.\n", fn);
+	close (fd);
 }
 
 int main(int argc, char* argv[])
 {
 	int socket, n, nr, nw, i = 0;
-	char buf[BUFSIZE], host[60];
+	char buf[BUFSIZE], host[60], fn[BUFSIZE];
 	unsigned short port;
 	struct sockaddr_in ser_addr;
 	struct hostent *hp;
-	char* fn = "NULL";
+	//char* fn = "NULL";
 
 	// Get server host name
 	if (argc == 1) // Assume server running on the local host
@@ -436,16 +393,14 @@ int main(int argc, char* argv[])
 	while (++i)
 	{
 		//printf("Client Input [%d]: ", i);
-		printf(">> ");
+		printf("\n>> ");
 
 		// Get user input check correct end of string char.
 		fgets(buf, sizeof(buf), stdin);
-		nr = strlen(buf);
 
-		if (buf[nr - 1] == '\n')
+		if (buf[strlen(buf) - 1] == '\n')
 		{
-			buf[nr - 1] = '\0';
-			--nr;
+			buf[strlen(buf) - 1] = '\0';
 		}
 
 		if (strcmp(buf, "quit") == 0)
@@ -475,12 +430,7 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(buf, "cd") == 0)
 		{
-			// get file path
-			char path[MAXBUF];
-			printf("\nPath: ");
-			fgets(path, MAXBUF, stdin);
-
-			cmd_cd(socket, path);
+			cmd_cd(socket);
 		}
 		else if (strcmp(buf, "lcd") == 0)
 		{
@@ -501,7 +451,7 @@ int main(int argc, char* argv[])
 			// check its valid
 			printf("Filename: ");
 			fgets(fn, MAXBUF, stdin);
-
+			//printf("Seaching for %s\n");
 			cmd_put(socket, fn);
 		}
 	}

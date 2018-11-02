@@ -17,8 +17,7 @@ int sendOneByte(int socket, char* code)
 // 2 bytes
 int sendTwoBytes(int socket, int len)
 {
-	short data = len;
-	data = htons(data);
+	short data = htons(len);
 
 	if (write(socket, &data, 2) != 2)
 	{
@@ -44,14 +43,12 @@ int sendFourBytes(int socket, int len)
 // n bytes
 int sendNBytes(int socket, char *buf, int nbytes)
 {
+	int nw = 0;
 	int n = 0;
-
-	for (int i = 0; i < nbytes; i += n)
+	for (n = 0; n < nbytes; n += nw)
 	{
-		if ((n = write(socket, buf + i, nbytes - i)) <= 0)
-		{
-			return n; // Write error
-		}
+		if ((nw = write(socket, buf+n, nbytes-n)) <= 0)
+			return nw;
 	}
 
 	return n;
@@ -79,36 +76,40 @@ int getTwoBytes(int socket, int* len) // 2 bytes
 	tmp = ntohs(tmp);
 	
 	int tmpconv = (int)tmp;
-	len = (int*)tmpconv; //here
+
+	*len = tmpconv;
 
 	return 1;
 }
 
 int getFourBytes(int socket, int* len) // 4 bytes
 { 
-//here
 	int tmp = 0;
 	if (read(socket, &tmp, 4) != 4)
 	{
 		return -1;
 	}
 
-	tmp = ntohl(tmp);
-	len = &tmp;
+	int tmpc = ntohl(tmp);
+	*len = tmpc;
+	//printf("returning\n");
 	return 1;
 }
 
 int getNBytes(int socket, char *buf, int nbytes) // n bytes
 {
+	int nr = 1;
 	int n = 0;
-
-	for (int i = 0; i < nbytes && n > 0; i += n)
-	{
-		if ((n = read(socket, buf + i, nbytes - i)) <= 0)
+	//for (n = 0; (n < nbytes) && (nr > 0); n += nr)
+	//{
+		if ((nr = read(socket, buf+n, nbytes-n)) < 0)
 		{
-			return n; // read error
+			printf("Failed reading data");
+			return (nr);
 		}
-	}
-
+		//printf("%s\n", buf);
+	//}
 	return n;
+	
+
 }

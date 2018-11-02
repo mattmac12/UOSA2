@@ -160,7 +160,6 @@ int getFileSize(int socket, int* len) // 4 bytes
 	{
 		return -1;
 	}
-
 	int tmpc = ntohl(tmp);
 	*len = tmpc;
 	//printf("returning\n");

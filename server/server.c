@@ -101,8 +101,8 @@ void cmd_cd(int socket)
 		return;
 	}
 
-	printf("Path: %s\n", path);
-	path[strlen(path) - 1] = '\0';
+	printf("Path: %s\n", path); // Spits out gibberish after path
+	path[len - 1] = '\0'; // Ignores random stuff after path
 
 	chdir(path);
 
@@ -155,6 +155,7 @@ void serve_a_client(int socket)
 				break;
 			case 'c':
 				cmd_cd(socket);
+				printf("BeforeBreak\n");
 				//cd
 				
 				break;

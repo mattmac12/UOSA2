@@ -291,7 +291,7 @@ void cmd_put(int socket, char* fn)
 	char buf[MAXBUF];
 
 	read(fd, buf, MAXBUF);
-	buf[strlen(buf)+1] = '\0';
+	buf[strlen(buf) + 1] = '\0';
 	printf("%s\n", buf);
 
 	filesize = strlen(buf);

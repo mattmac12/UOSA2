@@ -43,7 +43,7 @@ void daemon_init(void)
      if ( (pid = fork()) < 0) {
           perror("fork"); exit(1); 
      } else if (pid > 0) {
-          printf("Hay, you'd better remember my PID: %d\n If you do, just know that it's in logger.txt ;) \n", pid);
+          printf("Hay, you'd better remember my PID: %d\n If you do, just know that it's in logs.txt ;) \n", pid);
 		logger(pid, "<- this is my pid");
           exit(0);                  /* parent goes bye-bye */
      }

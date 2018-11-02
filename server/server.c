@@ -1,6 +1,8 @@
 #include  "stream.h"	//deals with sending and receiving to/from clients.
 #include  <stdlib.h>
 #include  <stdio.h>
+#include  <signal.h>     /* SIGCHLD, sigaction() */
+#include  <syslog.h>
 #include  <string.h>     /* strlen(), strcmp() etc */
 #include  <errno.h>      /* extern int errno, EINTR, perror() */
 #include  <sys/types.h>  /* pid_t, u_long, u_short */
@@ -13,25 +15,51 @@
 #define   SERV_TCP_PORT   40004           /* server port no */
 #define MAXBUF 256
 
-void daemon_init(void)
+
+
+void logger(int socket, char* data)
 {
-	pid_t   pid;
+	FILE *fp;
+	fp=fopen("logs.txt", "a");
+	fprintf(fp, "[Socket: %d]: %s \n", socket, data);
+	fclose(fp);
 
-	if ((pid = fork()) < 0) {
-		perror("fork");
-		exit(1);
-	}
-	else if (pid != 0) {
-		printf("Daemon pid = %d\n", pid); // pid of your daemon
-		exit(0);        /* end parent */
-	}
+}
 
-	/* child continues */
-	setsid();               /* become session leader */
+void claim_children()
+{
+     pid_t pid=1;
+     
+     while (pid>0) { /* claim as many zombies as we can */
+         pid = waitpid(0, (int *)0, WNOHANG); 
+     } 
+}
 
-	chdir("/");             /* change working directory */
+void daemon_init(void)
+{       
+     pid_t   pid;
+     struct sigaction act;
 
-	umask(0);               /* clear our file mode creation mask */
+     if ( (pid = fork()) < 0) {
+          perror("fork"); exit(1); 
+     } else if (pid > 0) {
+          printf("Hay, you'd better remember my PID: %d\n If you do, just know that it's in logger.txt ;) \n", pid);
+		logger(pid, "<- this is my pid");
+          exit(0);                  /* parent goes bye-bye */
+     }
+
+     /* child continues */
+     setsid();                      /* become session leader */
+     umask(0);                      /* clear file mode creation mask */
+
+     /* catch SIGCHLD to remove zombies from system */
+     act.sa_handler = claim_children; /* use reliable signal */
+     sigemptyset(&act.sa_mask);       /* not to block other signals */
+     act.sa_flags   = SA_NOCLDSTOP;   /* not catch stopped children */
+     sigaction(SIGCHLD,(struct sigaction *)&act,(struct sigaction *)0);
+     /* note: a less than perfect method is to use 
+              signal(SIGCHLD, claim_children);
+     */
 }
 
 void cmd_pwd(int socket)
@@ -155,7 +183,7 @@ void cmd_get(int socket)
 
 	getFileSize(socket, &nameLen);
 	printf("File name size: %d\n", nameLen);
-
+	//daemon_init();
 	getFN(socket, fileName, MAXBUF);
 	fileName[nameLen] = '\0';
 	printf("File name: %s", fileName);
@@ -239,11 +267,14 @@ void main()
 	int sd, nsd, n, cli_addrlen;  pid_t pid;
 	struct sockaddr_in ser_addr, cli_addr;
 
+
+	daemon_init();
+
 	/* set up listening socket sd */
 	if ((sd = socket(PF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("server:socket"); exit(1);
 	}
-
+	
 	/* build server Internet socket address */
 	bzero((char *)&ser_addr, sizeof(ser_addr));
 	ser_addr.sin_family = AF_INET;

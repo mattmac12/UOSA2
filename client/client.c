@@ -158,15 +158,6 @@ void cmd_lcd()
 
 void cmd_get(int socket, char* fn)
 {
-	// send 1 byte code - G
-	// send 2 btye code in 2s compliment and in network byte order - filename len
-	// send n bytes - filename
-
-	// receive 1 byte code - 0 failed 1 good
-
-	// receive 4 byte int - n - len of file
-	// receive n bytes - file
-
 	int fd, filesize;
 	char code;
 
@@ -232,20 +223,12 @@ void cmd_get(int socket, char* fn)
 
 void cmd_put(int socket, char* fn)
 {
-	// 1 byte code - 'P'
-	// 2 byte int 2s compliment and in network byte order len of filename to be sent by server
-	// send sequence of ascii chars rep file name
-
-	// receive ack code (0 = good)
-
-	// 1 byte code - 'B'
-	// 4 byte int in 2s compliment and in network byute order which represents the length of the file
-	// n bytes - contents of file
-
 	int fd, filesize;
 	int nr = 0;
 	struct stat st; // https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
 	char code;
+	
+	fn[strlen(fn) - 1] = '\0';
 
 	// Open file
 	if ((fd = open(fn, O_RDONLY)) == -1)
@@ -276,7 +259,7 @@ void cmd_put(int socket, char* fn)
 	}
 
 	// Send Length of filename to server.
-	if (sendTwoBytes(socket, strlen(fn)) == -1)
+	if (sendFourBytes(socket, strlen(fn)) == -1)
 	{
 		printf("Failed to send filename length.\n");
 		return;
@@ -288,9 +271,9 @@ void cmd_put(int socket, char* fn)
 		printf("Failed to send filename.\n");
 		return;
 	}
-
+/*
 	// Check for accecptance of file from server
-	/* add more error checking here */
+	/ add more error checking here /
 	if (getOneByte(socket, &code) != 0)
 	{
 		printf("Failed to accecpt command on server.\n");
@@ -303,21 +286,27 @@ void cmd_put(int socket, char* fn)
 		printf("Failed to send code for data transfer.\n");
 		return;
 	}
+*/
 
-	// Send filesize code
-	if (sendFourBytes(socket, strlen(fn)) == -1)
-	{
-		printf("Failed to send filesize.\n");
-		return;
-	}
-
-	char* buf;
+	char buf[MAXBUF];
 
 	read(fd, buf, MAXBUF);
 	buf[strlen(buf)+1] = '\0';
+	printf("%s\n", buf);
+
+	filesize = strlen(buf);
+	printf("file size: %d\n", filesize);
+
+	// Send filesize
+	if (sendFourBytes(socket, filesize) == -1)
+	{
+		printf("Failed to send file size.\n");
+		return;
+	}
+
 	//while ((nr = read(fd, buf, MAXBUF)) > 0)
 	//{
-		if (sendNBytes(socket, buf, nr) == -1)
+		if (sendNBytes(socket, buf, filesize) == -1)
 		{
 			printf("Failed to send file");
 			return;

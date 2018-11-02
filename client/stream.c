@@ -30,6 +30,7 @@ int sendTwoBytes(int socket, int len)
 // 4 bytes
 int sendFourBytes(int socket, int len)
 {
+	//printf("%d\n", len);
 	int data = htonl(len);
 
 	if (write(socket, &data, 4) != 4)

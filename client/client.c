@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define SERV_TCP_PORT 40008
+#define SERV_TCP_PORT 40004
 #define MAXBUF 256
 
 #define PWD 'a'
@@ -168,7 +168,7 @@ void cmd_get(int socket, char* fn)
 		return;
 	}
 	// Send file name length
-	if (sendTwoBytes(socket, strlen(fn)) == -1)
+	if (sendFourBytes(socket, strlen(fn)) == -1)
 	{
 		printf("Failed to send length of filename.\n");
 		return;
@@ -179,41 +179,30 @@ void cmd_get(int socket, char* fn)
 		printf("Failed to send filename.\n");
 		return;
 	}
-	// Get confirmation code from server
-	if (getOneByte(socket, &code) == -1)
-	{
-		printf("Failed to receive code.\n");
-		return;
-	}
-	// Check code from server
-	if (code != '1')
-	{
-		printf("Failed to locate file on server.\n");
-		return;
-	}
+
 	// Get file length from server
-	if (getTwoBytes(socket, &filesize) == -1)
+	if (getFourBytes(socket, &filesize) == -1)
 	{
 		printf("Failed to get file size.\n");
 		return;
 	}
+	printf("File size: %d\n", filesize);
 
 	// Get file from server
 	/* check this */
 	int nb = 0;
 	char buf[MAXBUF];
 
-	while ((nb = write(socket, buf, MAXBUF)) > 0)
+	if (getNBytes(socket, buf, filesize) == -1)
 	{
-		if (getNBytes(socket, buf, nb) == -1)
-		{
-			printf("Failed to send file");
-			return;
-		}
+		printf("Failed to send file");
+		return;
 	}
 
-	FILE *fp;
-	fp = fopen(fn, "w");
+	
+	//printf("%s\n", buf);
+	fn[strlen(fn) -1] ='\0';
+	FILE *fp = fopen(fn, "w");
 	fprintf(fp, buf);
 	fclose(fp);
 
@@ -225,7 +214,6 @@ void cmd_put(int socket, char* fn)
 {
 	int fd, filesize;
 	int nr = 0;
-	struct stat st; // https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
 	char code;
 	
 	fn[strlen(fn) - 1] = '\0';
@@ -234,18 +222,6 @@ void cmd_put(int socket, char* fn)
 	if ((fd = open(fn, O_RDONLY)) == -1)
 	{
 		printf("Failed to open file: %s\n", fn);
-		return;
-	}
-
-	// Get file size
-	// https://stackoverflow.com/questions/8236/how-do-you-determine-the-size-of-a-file-in-c
-	if (stat(fn, &st) == 0)
-	{
-		filesize = st.st_size;
-	}
-	else
-	{
-		printf("Failed to get file size of: %s\n", fn);
 		return;
 	}
 
@@ -271,31 +247,21 @@ void cmd_put(int socket, char* fn)
 		printf("Failed to send filename.\n");
 		return;
 	}
-/*
-	// Check for accecptance of file from server
-	/ add more error checking here /
-	if (getOneByte(socket, &code) != 0)
-	{
-		printf("Failed to accecpt command on server.\n");
-		return;
-	}
-
-	// Send data code
-	if (sendOneByte(socket, (char*) DATA) == -1)
-	{
-		printf("Failed to send code for data transfer.\n");
-		return;
-	}
-*/
 
 	char buf[MAXBUF];
 
-	read(fd, buf, MAXBUF);
+	if (read(fd, buf, sizeof(buf)) < 0)
+	{
+		printf("Read error\n");		
+		return;
+	}
+	close (fd);
+
 	buf[strlen(buf) + 1] = '\0';
 	printf("%s\n", buf);
 
 	filesize = strlen(buf);
-	printf("file size: %d\n", filesize);
+	//printf("file size: %d\n", filesize);
 
 	// Send filesize
 	if (sendFourBytes(socket, filesize) == -1)
@@ -304,17 +270,15 @@ void cmd_put(int socket, char* fn)
 		return;
 	}
 
-	//while ((nr = read(fd, buf, MAXBUF)) > 0)
-	//{
-		if (sendNBytes(socket, buf, filesize) == -1)
-		{
-			printf("Failed to send file");
-			return;
-		}
-	//}
+
+	if (sendNBytes(socket, buf, filesize) == -1)
+	{
+		printf("Failed to send file");
+		return;
+	}
+
 
 	printf("%s has been sent to server.\n", fn);
-	close (fd);
 }
 
 int main(int argc, char* argv[])
@@ -369,6 +333,7 @@ int main(int argc, char* argv[])
 	}
 
 	//ser_addr.sin_addr.s_addr = *(unsigned long *) hp->h_addr;
+	// wouldnt compile on my computer with this line weird errors works w/o
 
 	// Creat TCP socket and connect socket to server address
 	socket = createTCPSocket();
@@ -381,8 +346,8 @@ int main(int argc, char* argv[])
 
 	while (++i)
 	{
-		//printf("Client Input [%d]: ", i);
-		printf("\n>> ");
+		printf("Client Input [%d]: ", i);
+		//printf("\n>> ");
 
 		// Get user input check correct end of string char.
 		fgets(buf, sizeof(buf), stdin);
@@ -427,8 +392,6 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(buf, "gets") == 0)
 		{
-			// get file name from user
-			// check its valid
 			printf("Filename: ");
 			fgets(fn, MAXBUF, stdin);
 
@@ -436,11 +399,9 @@ int main(int argc, char* argv[])
 		}
 		else if (strcmp(buf, "puts") == 0)
 		{
-			// get file name from user
-			// check its valid
 			printf("Filename: ");
 			fgets(fn, MAXBUF, stdin);
-			//printf("Seaching for %s\n");
+
 			cmd_put(socket, fn);
 		}
 	}

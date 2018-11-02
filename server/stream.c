@@ -98,6 +98,7 @@ int sendFNLen(int socket, int len)
 int sendFileSize(int socket, int len)
 {
 	int data = htonl(len);
+	//printf("Filesize: %d\n", len);
 
 	if (write(socket, &data, 4) != 4)
 	{
@@ -110,15 +111,12 @@ int sendFileSize(int socket, int len)
 // n bytes
 int sendFN(int socket, char *buf, int nbytes)
 {
-	printf("%s\n", buf);
+	int nw = 0;
 	int n = 0;
-
-	for (int i = 0; i < nbytes; i += n)
+	for (n = 0; n < nbytes; n += nw)
 	{
-		if ((n = write(socket, buf + i, nbytes - 1)) <= 0)
-		{
-			return n; // Write error
-		}
+		if ((nw = write(socket, buf+n, nbytes-n)) <= 0)
+			return nw;
 	}
 
 	return n;
@@ -149,7 +147,8 @@ int getFNLen(int socket, int* len) // 2 bytes
 	tmp = ntohs(tmp);
 	
 	int tmpconv = (int)tmp;
-	len = &tmpconv;
+
+	*len = tmpconv; //here
 
 	return 1;
 }
@@ -164,48 +163,23 @@ int getFileSize(int socket, int* len) // 4 bytes
 	}
 
 	tmp = ntohl(tmp);
-	len = &tmp;
+	*len = tmp;
 
-return 1;
+	return 1;
 }
 
 int getFN(int socket, char *buf, int nbytes) // n bytes
 {
+	int nr = 1;
 	int n = 0;
-
-	for (int i = 0; i < nbytes && n > 0; i += n)
-	{
-		if ((n = read(socket, buf + i, nbytes - 1)) <= 0)
+	//for (n = 0; (n < nbytes) && (nr > 0); n += nr)
+	//{
+		if ((nr = read(socket, buf+n, nbytes-n)) < 0)
 		{
-			return n; // read error
+			printf("Failed reading data");
+			return (nr);
 		}
-	}
-
+		//printf("%s\n", buf);
+	//}
 	return n;
 }
-
-/*
-int sender(int tosend)
-{
-	if (sizeof(tosend) == 2)
-	{
-		return htons(tosend);
-	}
-	else
-	{
-		return htonl(tosend);
-	}
-}
-
-int receiver(int fromread)
-{
-	if (sizeof(int) == 2)
-	{
-		return ntoh(fromread);
-	}
-	else
-	{
-		return ntohl(fromread);
-	}
-}
-*/

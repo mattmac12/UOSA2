@@ -21,7 +21,7 @@ void logger(int socket, char* data)
 {
 	FILE *fp;
 	fp=fopen("logs.txt", "a");
-	fprintf(fp, "[Socket: %d]: %s \n", socket, data);
+	fprintf(fp, "[pid: %d]: %s \n", socket, data);
 	fclose(fp);
 
 }

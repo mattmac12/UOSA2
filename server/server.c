@@ -122,11 +122,9 @@ void serve_a_client(int socket)
 		/* read data from client */
 
 		printf("server[%d]: Received code: %c \n", socket, code);
-		
-		//int filename_len, filesize;
-		//char filename[MAXBUF];
-		//char file[MAXBUF];
-		//char c;
+
+		int nameLen, fileLen;
+		char fileName[MAXBUF], file[MAXBUF];
 
 		switch(code)
 		{
@@ -155,7 +153,6 @@ void serve_a_client(int socket)
 				break;
 			case 'c':
 				cmd_cd(socket);
-				printf("BeforeBreak\n");
 				//cd
 				
 				break;
@@ -168,6 +165,20 @@ void serve_a_client(int socket)
 				//client putting file on server
 				//receive length of filename
 				//receive filename
+
+				getFileSize(socket, &nameLen);
+				printf("File name size: %d\n", nameLen);
+			
+				getFN(socket, fileName, sizeof(fileName));
+				fileName[nameLen] = '\0';
+				printf("File name: %s\n", fileName);
+
+				getFileSize(socket, &fileLen);
+				printf("File size: %d\n", fileLen);
+
+				getFN(socket, file, sizeof(file));
+				printf("File data: %s\n", file);
+	
 				break;
 		}
 	

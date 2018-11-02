@@ -156,15 +156,14 @@ int getFNLen(int socket, int* len) // 2 bytes
 int getFileSize(int socket, int* len) // 4 bytes
 {
 	int tmp = 0;
-
 	if (read(socket, &tmp, 4) != 4)
 	{
 		return -1;
 	}
 
-	tmp = ntohl(tmp);
-	*len = tmp;
-
+	int tmpc = ntohl(tmp);
+	*len = tmpc;
+	//printf("returning\n");
 	return 1;
 }
 
